@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinical ML Benchmark & Diagnostic Copilot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --success: #16a34a;
+      --success-light: #f0fdf4;
+      --danger: #dc2626;
+      --danger-light: #fef2f2;
+      --warning: #d97706;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-400: #94a3b8;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f8fafc;
+      color: var(--slate-800);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Navbar */
+    .navbar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--slate-200);
+      padding: 0.9rem 1.75rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--slate-900);
+    }
+
+    .nav-badge {
+      background: #dbeafe;
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      letter-spacing: 0.03em;
+    }
+
+    .nav-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--slate-600);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+    }
+
+    /* Main Container */
+    .dashboard-container {
+      max-width: 1600px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(360px, 0.95fr);
+      gap: 1.75rem;
+      flex: 1;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--slate-900);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-subtitle {
+      font-size: 0.875rem;
+      color: var(--slate-500);
+      margin-bottom: 1.25rem;
+    }
+
+    /* Schema Table */
+    .schema-table-wrapper {
+      overflow-x: auto;
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-md);
+      margin-bottom: 1.25rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+
+    th {
+      background: var(--slate-50);
+      color: var(--slate-700);
+      font-weight: 600;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--slate-200);
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--slate-100);
+      color: var(--slate-700);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .code-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      background: var(--slate-100);
+      color: var(--slate-800);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .type-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      display: inline-block;
+    }
+
+    .badge-float {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+    }
+
+    .badge-target {
+      background: #fdf2f8;
+      color: #db2777;
+      border: 1px solid #fbcfe8;
+    }
+
+    /* Action Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 0.65rem 1.25rem;
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-outline {
+      background: #ffffff;
+      color: var(--slate-700);
+      border-color: var(--slate-300);
+    }
+
+    .btn-outline:hover {
+      background: var(--slate-50);
+      border-color: var(--slate-400);
+    }
+
+    .btn-sm {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.775rem;
+      border-radius: var(--radius-sm);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Upload Box */
+    .upload-zone {
+      border: 2px dashed var(--slate-300);
+      border-radius: var(--radius-lg);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      background: var(--slate-50);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .upload-zone:hover {
+      border-color: var(--primary);
+      background: #f0f7ff;
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-icon {
+      width: 44px;
+      height: 44px;
+      color: var(--primary);
+      margin-bottom: 0.75rem;
+    }
+
+    .file-name-display {
+      margin-top: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--slate-700);
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1.25rem;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .alert-danger {
+      background: var(--danger-light);
+      border: 1px solid #fecaca;
+      color: var(--danger);
+    }
+
+    .alert-success {
+      background: var(--success-light);
+      border: 1px solid #bbf7d0;
+      color: var(--success);
+    }
+
+    /* Metric Summary Stats Chips */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-chip {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+    }
+
+    .stat-chip-label {
+      font-size: 0.75rem;
+      color: var(--slate-500);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-chip-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--slate-900);
+      margin-top: 0.2rem;
+    }
+
+    /* Chart Cards & Previews */
+    .chart-container {
+      position: relative;
+      background: #ffffff;
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .chart-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: contain;
+    }
+
+    .chart-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    /* Metric Badges in Table */
+    .badge-safest {
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #93c5fd;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .badge-best {
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #86efac;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    /* Chatbox Column (Right Column) */
+    .chatbox-wrapper {
+      position: sticky;
+      top: 5rem;
+      height: calc(100vh - 6.5rem);
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .chatbox-header {
+      padding: 1rem 1.25rem;
+      background: #ffffff;
+      border-bottom: 1px solid var(--slate-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chat-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--slate-900);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .chat-badge {
+      font-size: 0.7rem;
+      background: #f1f5f9;
+      color: var(--slate-600);
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-weight: 600;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      background: #fafafa;
+    }
+
+    .msg-bubble {
+      max-width: 88%;
+      padding: 0.85rem 1.1rem;
+      border-radius: 14px;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      position: relative;
+      word-wrap: break-word;
+    }
+
+    .msg-user {
+      align-self: flex-end;
+      background: var(--primary);
+      color: #ffffff;
+      border-bottom-right-radius: 2px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .msg-bot {
+      align-self: flex-start;
+      background: #ffffff;
+      color: var(--slate-800);
+      border: 1px solid var(--slate-200);
+      border-bottom-left-radius: 2px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .msg-time {
+      font-size: 0.65rem;
+      margin-top: 0.35rem;
+      text-align: right;
+      opacity: 0.75;
+    }
+
+    /* Markdown inside bot bubble */
+    .msg-bot h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+      color: var(--slate-900);
+    }
+    .msg-bot p {
+      margin-bottom: 0.4rem;
+    }
+    .msg-bot p:last-child {
+      margin-bottom: 0;
+    }
+    .msg-bot ul, .msg-bot ol {
+      margin: 0.4rem 0 0.4rem 1.25rem;
+    }
+    .msg-bot li {
+      margin-bottom: 0.25rem;
+    }
+    .msg-bot table {
+      margin: 0.6rem 0;
+      font-size: 0.8rem;
+    }
+    .msg-bot th, .msg-bot td {
+      padding: 0.4rem 0.6rem;
+    }
+    .msg-bot code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      background: var(--slate-100);
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+    }
+
+    /* Suggestion Chips */
+    .chat-suggestions {
+      padding: 0.6rem 1rem;
+      background: #ffffff;
+      border-top: 1px solid var(--slate-100);
+      display: flex;
+      gap: 0.45rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .chat-suggestions::-webkit-scrollbar {
+      display: none;
+    }
+
+    .suggestion-chip {
+      white-space: nowrap;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: var(--slate-100);
+      color: var(--slate-700);
+      border: 1px solid var(--slate-200);
+      padding: 0.3rem 0.65rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .suggestion-chip:hover {
+      background: #e2e8f0;
+      color: var(--slate-900);
+    }
+
+    /* Input area */
+    .chat-input-area {
+      padding: 0.85rem 1rem;
+      background: #ffffff;
+      border-top: 1px solid var(--slate-200);
+      display: flex;
+      gap: 0.6rem;
+    }
+
+    .chat-input {
+      flex: 1;
+      padding: 0.65rem 1rem;
+      border: 1px solid var(--slate-300);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.15s ease;
+    }
+
+    .chat-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .chat-send-btn {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 0.65rem 1rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: background 0.15s ease;
+    }
+
+    .chat-send-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .chat-send-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Typing indicator */
+    .typing-dots {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+    }
+
+    .typing-dots span {
+      width: 6px;
+      height: 6px;
+      background: var(--slate-400);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1); }
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: #ffffff;
+      gap: 1rem;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+    <div style="font-weight: 600; font-size: 1.1rem;">Training 6 Classifiers & Generating 300 DPI Figures...</div>
+    <div style="font-size: 0.85rem; color: #cbd5e1;">Running stratified 80/20 benchmark and rendering confusion matrices</div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+      </svg>
+      <span>Clinical ML Benchmark & Diagnostic Copilot</span>
+      <span class="nav-badge">6 Classifiers Suite</span>
+    </div>
+    <div class="nav-status">
+      <span class="status-dot"></span>
+      <span>100% Offline Engine</span>
+    </div>
+  </nav>
+
+  <!-- Dashboard Grid -->
+  <div class="dashboard-container">
+    
+    <!-- LEFT COLUMN: Schema, Upload, Charts, Metrics Table -->
+    <div class="left-column">
+
+      <!-- Alerts -->
+      {% if error_message %}
+      <div class="alert alert-danger">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <div><strong>Error:</strong> {{ error_message }}</div>
+      </div>
+      {% endif %}
+
+      {% if success_message %}
+      <div class="alert alert-success">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <div>{{ success_message }}</div>
+      </div>
+      {% endif %}
+
+      <!-- Section 1: Fixed Dataset Schema Guide -->
+      <div class="card">
+        <div class="card-title">
+          <span>📋 Required Dataset Schema & Format</span>
+          <a href="{% url 'analyzer:download_template' %}" class="btn btn-outline btn-sm">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Download Sample Format .CSV
+          </a>
+        </div>
+        <p class="card-subtitle">
+          Your uploaded dataset must contain exactly these 10 continuous numeric features and 1 diagnosis target column.
+        </p>
+
+        <div class="schema-table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Column Name</th>
+                <th>Data Type</th>
+                <th>Description / Permitted Values</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for feat in feature_columns %}
+              <tr>
+                <td><span class="code-badge">{{ feat }}</span></td>
+                <td><span class="type-badge badge-float">Float (Numeric)</span></td>
+                <td>Continuous clinical cellular feature measured from cell nuclei images</td>
+              </tr>
+              {% endfor %}
+              <tr style="background: #fffdfd;">
+                <td><span class="code-badge" style="background: #fdf2f8; color: #db2777;">{{ target_column }}</span></td>
+                <td><span class="type-badge badge-target">Binary Target</span></td>
+                <td>
+                  <strong>'Benign' / 'Malignant'</strong>, <strong>'B' / 'M'</strong>, or <strong>0 / 1</strong>
+                  <br><small style="color: var(--slate-500);">Auto-mapped: Benign -> 0 (Negative), Malignant -> 1 (Positive)</small>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 2: CSV Upload Form -->
+      <div class="card">
+        <div class="card-title">
+          <span>📤 Upload Clinical Dataset (.CSV)</span>
+        </div>
+        <p class="card-subtitle">
+          Upload your clinical cancer dataset to automatically benchmark 6 classification algorithms and render 300 DPI high-resolution figures.
+        </p>
+
+        <form method="POST" enctype="multipart/form-data" id="uploadForm">
+          {% csrf_token %}
+          <div class="upload-zone" id="dropZone">
+            <input type="file" name="csv_file" id="csvFileInput" accept=".csv" required>
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+              <path d="M12 12v9"></path>
+              <path d="m16 16-4-4-4 4"></path>
+            </svg>
+            <div style="font-weight: 600; color: var(--slate-800);">Click to browse or drag & drop CSV file here</div>
+            <div style="font-size: 0.8rem; color: var(--slate-500); margin-top: 0.25rem;">Supports standard comma-separated format with header row</div>
+            <div id="selectedFileName" class="file-name-display" style="display: none;"></div>
+          </div>
+
+          <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+            <button type="submit" class="btn btn-primary" id="runBenchmarkBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Run 6-Model Benchmark
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {% if benchmark_data %}
+      <!-- Section 3: Dataset Summary Chips -->
+      <div class="stats-grid">
+        <div class="stat-chip">
+          <div class="stat-chip-label">Total Records</div>
+          <div class="stat-chip-value">{{ benchmark_data.dataset_stats.total_rows }}</div>
+        </div>
+        <div class="stat-chip">
+          <div class="stat-chip-label">Benign (0)</div>
+          <div class="stat-chip-value" style="color: #2563eb;">{{ benchmark_data.dataset_stats.benign_count }}</div>
+        </div>
+        <div class="stat-chip">
+          <div class="stat-chip-label">Malignant (1)</div>
+          <div class="stat-chip-value" style="color: #db2777;">{{ benchmark_data.dataset_stats.malignant_count }}</div>
+        </div>
+        <div class="stat-chip">
+          <div class="stat-chip-label">Train / Test</div>
+          <div class="stat-chip-value" style="font-size: 1.1rem;">{{ benchmark_data.dataset_stats.train_samples }} / {{ benchmark_data.dataset_stats.test_samples }}</div>
+        </div>
+        <div class="stat-chip" style="background: #f0fdf4; border-color: #bbf7d0;">
+          <div class="stat-chip-label" style="color: #15803d;">Top Accuracy</div>
+          <div class="stat-chip-value" style="color: #15803d; font-size: 1.1rem;">{{ benchmark_data.best_model.name }} ({{ benchmark_data.best_model.accuracy }}%)</div>
+        </div>
+        <div class="stat-chip" style="background: #eff6ff; border-color: #bfdbfe;">
+          <div class="stat-chip-label" style="color: #1d4ed8;">Safest Clinical</div>
+          <div class="stat-chip-value" style="color: #1d4ed8; font-size: 1.1rem;">{{ benchmark_data.safest_model.name }} ({{ benchmark_data.safest_model.fn }} FN)</div>
+        </div>
+      </div>
+
+      <!-- Section 4: Chart 2 - Algorithm Accuracy Comparison -->
+      <div class="card">
+        <div class="card-title">
+          <span>📊 Algorithm Accuracy Comparison</span>
+          <div class="btn-group">
+            <span style="font-size: 0.75rem; color: var(--slate-500); align-self: center; margin-right: 0.25rem;">Download 300 DPI:</span>
+            <a href="{% url 'analyzer:download_chart' 'accuracy_comparison' 'png' %}" class="btn btn-outline btn-sm">PNG</a>
+            <a href="{% url 'analyzer:download_chart' 'accuracy_comparison' 'jpg' %}" class="btn btn-outline btn-sm">JPG</a>
+            <a href="{% url 'analyzer:download_chart' 'accuracy_comparison' 'jpeg' %}" class="btn btn-outline btn-sm">JPEG</a>
+          </div>
+        </div>
+        <p class="card-subtitle">
+          Direct comparative accuracy benchmark. <span style="color:#2ca02c; font-weight:600;">Green</span> represents highest accuracy, <span style="color:#d62728; font-weight:600;">Red</span> represents lowest accuracy.
+        </p>
+        <div class="chart-container">
+          <img src="data:image/png;base64,{{ benchmark_data.charts.accuracy_comparison_b64 }}" alt="Algorithm Accuracy Comparison" class="chart-img">
+        </div>
+      </div>
+
+      <!-- Section 5: Chart 1 - Confusion Matrices 2x3 Grid -->
+      <div class="card">
+        <div class="card-title">
+          <span>🧬 Confusion Matrices of Classification Algorithms</span>
+          <div class="btn-group">
+            <span style="font-size: 0.75rem; color: var(--slate-500); align-self: center; margin-right: 0.25rem;">Download 300 DPI:</span>
+            <a href="{% url 'analyzer:download_chart' 'confusion_matrices' 'png' %}" class="btn btn-outline btn-sm">PNG</a>
+            <a href="{% url 'analyzer:download_chart' 'confusion_matrices' 'jpg' %}" class="btn btn-outline btn-sm">JPG</a>
+            <a href="{% url 'analyzer:download_chart' 'confusion_matrices' 'jpeg' %}" class="btn btn-outline btn-sm">JPEG</a>
+          </div>
+        </div>
+        <p class="card-subtitle">
+          High-resolution 2x3 grid displaying True Negatives, False Positives, False Negatives, and True Positives on stratified test partition.
+        </p>
+        <div class="chart-container">
+          <img src="data:image/png;base64,{{ benchmark_data.charts.confusion_matrices_b64 }}" alt="Confusion Matrices of Classification Algorithms" class="chart-img">
+        </div>
+      </div>
+
+      <!-- Section 6: Classification Metrics Summary Table -->
+      <div class="card">
+        <div class="card-title">
+          <span>📑 Comprehensive Classification Performance Table</span>
+        </div>
+        <p class="card-subtitle">
+          Detailed metrics across all 6 evaluated classifiers on identical stratified test samples.
+        </p>
+
+        <div class="schema-table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Algorithm</th>
+                <th>Accuracy</th>
+                <th>Precision</th>
+                <th>Recall (Sensitivity)</th>
+                <th>F1-Score</th>
+                <th>TN</th>
+                <th>FP</th>
+                <th style="color: #dc2626;">FN (Missed)</th>
+                <th>TP</th>
+                <th>Diagnostic Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for model in benchmark_data.results %}
+              <tr>
+                <td style="font-weight: 600; color: var(--slate-900);">{{ model.name }}</td>
+                <td><strong>{{ model.accuracy }}%</strong></td>
+                <td>{{ model.precision }}%</td>
+                <td>{{ model.recall }}%</td>
+                <td>{{ model.f1 }}%</td>
+                <td>{{ model.tn }}</td>
+                <td>{{ model.fp }}</td>
+                <td style="font-weight: 700; color: {% if model.fn == benchmark_data.safest_model.fn %}#16a34a{% else %}#dc2626{% endif %};">
+                  {{ model.fn }}
+                </td>
+                <td>{{ model.tp }}</td>
+                <td>
+                  {% if model.name == benchmark_data.best_model.name %}
+                  <span class="badge-best">🏆 Best Accuracy</span>
+                  {% endif %}
+                  {% if model.name == benchmark_data.safest_model.name %}
+                  <span class="badge-safest">🛡️ Safest (Min FN)</span>
+                  {% endif %}
+                  {% if model.name != benchmark_data.best_model.name and model.name != benchmark_data.safest_model.name %}
+                  <span style="font-size: 0.75rem; color: var(--slate-500);">Evaluated</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- RIGHT COLUMN: Sticky 100% Offline Context-Aware Chatbox -->
+    <div class="right-column">
+      <div class="chatbox-wrapper">
+        
+        <!-- Chat Header -->
+        <div class="chatbox-header">
+          <div class="chat-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>Clinical ML Copilot</span>
+          </div>
+          <span class="chat-badge">
+            {% if benchmark_data %}
+            🟢 Session Active
+            {% else %}
+            ⚪ Ready for Dataset
+            {% endif %}
+          </span>
+        </div>
+
+        <!-- Chat Messages Container -->
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg-bubble msg-bot">
+            <p><strong>Hello! I am your 100% Offline Clinical Benchmark Copilot.</strong></p>
+            {% if benchmark_data %}
+            <p>I have analyzed your dataset ({{ benchmark_data.dataset_stats.total_rows }} records) across 6 classification algorithms.</p>
+            <p>Ask me about top performers, clinical safety (fewest False Negatives), head-to-head comparisons, or click a quick-prompt chip below!</p>
+            {% else %}
+            <p>Please upload your clinical CSV dataset or click <strong>'Download Sample Format .CSV'</strong> to start benchmarking. I will query the live results instantly and contextually!</p>
+            {% endif %}
+            <div class="msg-time" id="welcomeTime">Just now</div>
+          </div>
+        </div>
+
+        <!-- Suggestion Chips -->
+        <div class="chat-suggestions">
+          <button class="suggestion-chip" onclick="sendSuggestion('What is the best performing model?')">🏆 Best Model</button>
+          <button class="suggestion-chip" onclick="sendSuggestion('Which model is safest clinically with fewest False Negatives?')">🛡️ Safest Model</button>
+          <button class="suggestion-chip" onclick="sendSuggestion('Compare Logistic Regression and SVM')">⚖️ Compare LR & SVM</button>
+          <button class="suggestion-chip" onclick="sendSuggestion('Random Forest vs KNN')">🌲 RF vs KNN</button>
+          <button class="suggestion-chip" onclick="sendSuggestion('Explain False Negatives and confusion matrices')">🔬 False Negatives</button>
+          <button class="suggestion-chip" onclick="sendSuggestion('Show dataset statistics and class distribution')">📊 Dataset Stats</button>
+          <button class="suggestion-chip" onclick="sendSuggestion('Rank all models by accuracy')">📈 Accuracy Ranking</button>
+        </div>
+
+        <!-- Input Bar -->
+        <div class="chat-input-area">
+          <input type="text" id="chatInput" class="chat-input" placeholder="Ask about accuracy, clinical safety, comparisons..." autocomplete="off">
+          <button type="button" id="chatSendBtn" class="chat-send-btn" onclick="sendMessage()">
+            <span>Send</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // File input drag & drop feedback
+    const fileInput = document.getElementById('csvFileInput');
+    const dropZone = document.getElementById('dropZone');
+    const fileNameDisplay = document.getElementById('selectedFileName');
+    const uploadForm = document.getElementById('uploadForm');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+          fileNameDisplay.textContent = 'Selected: ' + e.target.files[0].name;
+          fileNameDisplay.style.display = 'block';
+        }
+      });
+    }
+
+    if (uploadForm) {
+      uploadForm.addEventListener('submit', () => {
+        if (fileInput && fileInput.files.length > 0) {
+          loadingOverlay.style.display = 'flex';
+        }
+      });
+    }
+
+    // CSRF helper
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    const csrftoken = getCookie('csrftoken');
+
+    // Chat handling
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const chatSendBtn = document.getElementById('chatSendBtn');
+
+    function getCurrentTime() {
+      const now = new Date();
+      return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    document.getElementById('welcomeTime').textContent = getCurrentTime();
+
+    // Lightweight markdown parser for rich bot responses
+    function formatMarkdown(text) {
+      if (!text) return '';
+      
+      // Escape HTML
+      let html = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+      // Headers (### Header)
+      html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+
+      // Bold (**text**)
+      html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+
+      // Inline code (`code`)
+      html = html.replace(/`([^`]+)`/gim, '<code>$1</code>');
+
+      // Markdown tables
+      const lines = html.split('\n');
+      let inTable = false;
+      let tableHtml = '';
+      let processedLines = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (line.startsWith('|') && line.endsWith('|')) {
+          if (!inTable) {
+            inTable = true;
+            tableHtml = '<table>';
+          }
+          const cells = line.split('|').slice(1, -1).map(c => c.trim());
+          if (cells.every(c => c.match(/^:?-+:?$/))) {
+            // separator row, skip
+            continue;
+          }
+          const isHeader = !tableHtml.includes('<tbody>') && !tableHtml.includes('<tr>');
+          if (isHeader) {
+            tableHtml += '<thead><tr>' + cells.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+          } else {
+            tableHtml += '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+          }
+        } else {
+          if (inTable) {
+            tableHtml += '</tbody></table>';
+            processedLines.push(tableHtml);
+            inTable = false;
+            tableHtml = '';
+          }
+          processedLines.push(line);
+        }
+      }
+      if (inTable) {
+        tableHtml += '</tbody></table>';
+        processedLines.push(tableHtml);
+      }
+
+      html = processedLines.join('\n');
+
+      // Unordered lists (- item)
+      html = html.replace(/^\- (.*$)/gim, '<li>$1</li>');
+      html = html.replace(/(<li>.*<\/li>)/gims, '<ul>$1</ul>');
+      html = html.replace(/<\/ul>\s*<ul>/g, '');
+
+      // Line breaks into paragraphs
+      html = html.split(/\n{2,}/).map(para => {
+        if (para.startsWith('<h3>') || para.startsWith('<ul>') || para.startsWith('<table>')) {
+          return para;
+        }
+        return `<p>${para.replace(/\n/g, '<br>')}</p>`;
+      }).join('');
+
+      return html;
+    }
+
+    function appendMessage(sender, text) {
+      const bubble = document.createElement('div');
+      bubble.classList.add('msg-bubble', sender === 'user' ? 'msg-user' : 'msg-bot');
+
+      if (sender === 'user') {
+        bubble.textContent = text;
+      } else {
+        bubble.innerHTML = formatMarkdown(text);
+      }
+
+      const timeEl = document.createElement('div');
+      timeEl.className = 'msg-time';
+      timeEl.textContent = getCurrentTime();
+      bubble.appendChild(timeEl);
+
+      chatMessages.appendChild(bubble);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function appendTypingIndicator() {
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble msg-bot';
+      bubble.id = 'typingIndicator';
+      bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+      chatMessages.appendChild(bubble);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      return bubble;
+    }
+
+    function removeTypingIndicator() {
+      const indicator = document.getElementById('typingIndicator');
+      if (indicator) {
+        indicator.remove();
+      }
+    }
+
+    async function sendMessage() {
+      const query = chatInput.value.trim();
+      if (!query) return;
+
+      appendMessage('user', query);
+      chatInput.value = '';
+      chatSendBtn.disabled = true;
+
+      appendTypingIndicator();
+
+      try {
+        const response = await fetch('/chat/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken,
+          },
+          body: JSON.stringify({ message: query }),
+        });
+
+        removeTypingIndicator();
+
+        if (response.ok) {
+          const data = await response.json();
+          appendMessage('bot', data.reply || 'No response generated.');
+        } else {
+          appendMessage('bot', '⚠️ Error contacting offline chat service. Status: ' + response.status);
+        }
+      } catch (err) {
+        removeTypingIndicator();
+        appendMessage('bot', '⚠️ Network error: ' + err.message);
+      } finally {
+        chatSendBtn.disabled = false;
+        chatInput.focus();
+      }
+    }
+
+    function sendSuggestion(text) {
+      chatInput.value = text;
+      sendMessage();
+    }
+
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
