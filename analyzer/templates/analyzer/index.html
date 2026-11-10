@@ -761,26 +761,26 @@
         </div>
       </div>
 
-      <!-- Section 2: CSV Upload Form -->
+      <!-- Section 2: Dataset Upload Form -->
       <div class="card">
         <div class="card-title">
-          <span>📤 Upload Clinical Dataset (.CSV)</span>
+          <span>📤 Upload Clinical Dataset (.CSV, .PDF, .XLSX)</span>
         </div>
         <p class="card-subtitle">
-          Upload your clinical cancer dataset to automatically benchmark 6 classification algorithms and render 300 DPI high-resolution figures.
+          Upload your clinical cancer dataset in CSV, PDF, or Excel format to automatically benchmark 6 classification algorithms and render 300 DPI high-resolution figures.
         </p>
 
         <form method="POST" enctype="multipart/form-data" id="uploadForm">
           {% csrf_token %}
           <div class="upload-zone" id="dropZone">
-            <input type="file" name="csv_file" id="csvFileInput" accept=".csv" required>
+            <input type="file" name="dataset_file" id="csvFileInput" accept=".csv, .pdf, .xlsx" required>
             <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
               <path d="M12 12v9"></path>
               <path d="m16 16-4-4-4 4"></path>
             </svg>
-            <div style="font-weight: 600; color: var(--slate-800);">Click to browse or drag & drop CSV file here</div>
-            <div style="font-size: 0.8rem; color: var(--slate-500); margin-top: 0.25rem;">Supports standard comma-separated format with header row</div>
+            <div style="font-weight: 600; color: var(--slate-800);">Click to browse or drag & drop dataset file here</div>
+            <div style="font-size: 0.8rem; color: var(--slate-500); margin-top: 0.25rem;">Accepted formats: <code>.csv</code>, <code>.pdf</code>, <code>.xlsx</code></div>
             <div id="selectedFileName" class="file-name-display" style="display: none;"></div>
           </div>
 

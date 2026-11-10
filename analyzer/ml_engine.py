@@ -74,9 +74,98 @@ def get_sample_csv() -> str:
     return df.to_csv(index=False)
 
 
-def validate_and_preprocess_csv(file_obj) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+def load_dataframe_from_file(file_obj, filename: str = '') -> pd.DataFrame:
     """
-    Validates uploaded CSV file:
+    Loads a pandas DataFrame from an uploaded dataset file:
+    - .csv: Comma-separated values
+    - .xlsx: Excel spreadsheet (openpyxl)
+    - .pdf: PDF documents containing tables or tabular text (pdfplumber)
+    """
+    fname = (filename or getattr(file_obj, 'name', '') or '').lower()
+
+    if fname.endswith('.xlsx'):
+        try:
+            return pd.read_excel(file_obj, engine='openpyxl')
+        except Exception as e:
+            raise ValueError(f"Unable to parse Excel (.xlsx) file: {str(e)}")
+
+    elif fname.endswith('.pdf'):
+        try:
+            import pdfplumber
+            all_rows = []
+            
+            # Read bytes to allow seeking / multi-pass parsing
+            if hasattr(file_obj, 'read'):
+                file_bytes = file_obj.read()
+                if hasattr(file_obj, 'seek'):
+                    file_obj.seek(0)
+            else:
+                file_bytes = file_obj
+
+            with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
+                # 1. Try table extraction first
+                for page in pdf.pages:
+                    tables = page.extract_tables()
+                    for table in tables:
+                        for row in table:
+                            if row and any(cell is not None and str(cell).strip() != '' for cell in row):
+                                all_rows.append([str(c).strip() if c is not None else '' for c in row])
+
+                # 2. If no grid tables found, fallback to line-based text parsing
+                if not all_rows:
+                    for page in pdf.pages:
+                        text = page.extract_text()
+                        if text:
+                            for line in text.splitlines():
+                                line = line.strip()
+                                if not line:
+                                    continue
+                                if ',' in line:
+                                    parts = [p.strip() for p in line.split(',')]
+                                elif '\t' in line:
+                                    parts = [p.strip() for p in line.split('\t')]
+                                else:
+                                    parts = [p.strip() for p in line.split()]
+                                if parts:
+                                    all_rows.append(parts)
+
+            if not all_rows or len(all_rows) < 2:
+                raise ValueError("No tabular data with headers could be extracted from the uploaded PDF.")
+
+            header = [str(c).strip() for c in all_rows[0]]
+            header = [h if h else f'col_{i}' for i, h in enumerate(header)]
+
+            data_rows = []
+            for row in all_rows[1:]:
+                # If row is repeated header across pages, skip it
+                if [str(c).strip() for c in row] == header:
+                    continue
+                if len(row) < len(header):
+                    row = row + [''] * (len(header) - len(row))
+                elif len(row) > len(header):
+                    row = row[:len(header)]
+                data_rows.append(row)
+
+            if not data_rows:
+                raise ValueError("The PDF contains a header but no data rows.")
+
+            return pd.DataFrame(data_rows, columns=header)
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f"Unable to parse PDF dataset: {str(e)}")
+
+    else:
+        # Default to CSV parser
+        try:
+            return pd.read_csv(file_obj)
+        except Exception as e:
+            raise ValueError(f"Unable to parse CSV file: {str(e)}")
+
+
+def validate_and_preprocess_file(file_obj, filename: str = '') -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    """
+    Validates uploaded CSV, XLSX, or PDF dataset:
     - Normalizes column names (lowercase, stripped whitespace, underscores)
     - Checks required columns
     - Drops rows with NaNs
@@ -84,13 +173,10 @@ def validate_and_preprocess_csv(file_obj) -> Tuple[pd.DataFrame, Dict[str, Any]]
     - Validates diagnosis values ('Benign'/'Malignant', 'B'/'M', 0/1)
     - Ensures at least 20 rows and both classes present
     """
-    try:
-        df = pd.read_csv(file_obj)
-    except Exception as e:
-        raise ValueError(f"Unable to parse CSV file: {str(e)}")
+    df = load_dataframe_from_file(file_obj, filename)
 
     if df.empty:
-        raise ValueError("The uploaded CSV file is empty.")
+        raise ValueError("The uploaded dataset file is empty.")
 
     # Normalize column names: strip whitespace, lowercase, replace spaces with underscores
     col_map = {col: col.strip().lower().replace(" ", "_") for col in df.columns}
@@ -173,6 +259,11 @@ def validate_and_preprocess_csv(file_obj) -> Tuple[pd.DataFrame, Dict[str, Any]]
     }
 
     return df, stats
+
+
+def validate_and_preprocess_csv(file_obj) -> Tuple[pd.DataFrame, Dict[str, Any]]:
+    """Backward-compatible wrapper for CSV files."""
+    return validate_and_preprocess_file(file_obj, filename='dataset.csv')
 
 
 def train_and_benchmark_models(df: pd.DataFrame) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
@@ -390,15 +481,15 @@ def generate_and_save_charts(results: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def execute_full_benchmark(file_obj) -> Dict[str, Any]:
+def execute_full_benchmark(file_obj, filename: str = '') -> Dict[str, Any]:
     """
     End-to-end pipeline:
-    1. Validates and preprocesses CSV
+    1. Validates and preprocesses CSV, XLSX, or PDF dataset
     2. Trains and benchmarks 6 algorithms
     3. Generates 300 DPI multi-format figures & base64
     4. Compiles summary statistics and highlights
     """
-    df, stats = validate_and_preprocess_csv(file_obj)
+    df, stats = validate_and_preprocess_file(file_obj, filename=filename)
     results, split_info = train_and_benchmark_models(df)
     charts = generate_and_save_charts(results)
 

@@ -35,17 +35,19 @@ def index_view(request):
     }
 
     if request.method == 'POST':
-        uploaded_file = request.FILES.get('csv_file')
+        uploaded_file = request.FILES.get('dataset_file') or request.FILES.get('csv_file')
         if not uploaded_file:
-            context['error_message'] = "Please select a valid .csv file to upload."
+            context['error_message'] = "Please select a valid .csv, .pdf, or .xlsx file to upload."
             return render(request, 'analyzer/index.html', context)
 
-        if not uploaded_file.name.lower().endswith('.csv'):
-            context['error_message'] = "Invalid file type. Please upload a comma-separated values (.csv) file."
+        file_name_lower = uploaded_file.name.lower()
+        allowed_extensions = ('.csv', '.pdf', '.xlsx')
+        if not any(file_name_lower.endswith(ext) for ext in allowed_extensions):
+            context['error_message'] = "Invalid file type. Supported formats are .csv, .pdf, and .xlsx."
             return render(request, 'analyzer/index.html', context)
 
         try:
-            benchmark_data = ml_engine.execute_full_benchmark(uploaded_file)
+            benchmark_data = ml_engine.execute_full_benchmark(uploaded_file, filename=uploaded_file.name)
             # Store in session for offline context-aware chatbox queries
             request.session['benchmark_data'] = benchmark_data
             context['benchmark_data'] = benchmark_data
